@@ -8,7 +8,7 @@ Feature: Web Server Created by CloudFormation for the Mini Project
     Then the output should contain "2.2.29"
   
   Scenario: Is apache running?
-    When I run `sudo /sbin/service httpd status`
+    When I run `/sbin/service httpd status`
     Then the output should contain "running"
   
   Scenario: Is apache hosting the proper content?
