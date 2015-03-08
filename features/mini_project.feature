@@ -1,14 +1,14 @@
 Feature: Web Server Created by CloudFormation for the Mini Project
   As a Developer
   I would like my web server provisioned correctly
-  so I can impress my potentional future employer and co-workers
+  so I can impress my potential future employer and co-workers
 
   Scenario: Is the proper version of Apache installed?
     When I run `/usr/sbin/httpd -v`
-    Then the output should contain "2.4.6"
+    Then the output should contain "2.2.29"
   
   Scenario: Is apache running?
-    When I run `/usr/sbin/service httpd status`
+    When I run `sudo /sbin/service httpd status`
     Then the output should contain "running"
   
   Scenario: Is apache hosting the proper content?
