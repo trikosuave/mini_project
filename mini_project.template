@@ -1,0 +1,177 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "AWS CloudFormation Template for a web server that is free tier eligible ",
+  "Parameters": {
+    "KeyName": {
+      "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+      "Type": "String"
+    }
+  },
+  "Mappings": {
+    "RegionMap": {
+      "us-east-1": {
+        "AMI": "ami-146e2a7c"
+      },
+      "us-west-1": {
+        "AMI": "ami-42908907"
+      },
+      "us-west-2": {
+        "AMI": "ami-dfc39aef"
+      }
+    }
+  },
+  "Resources": {
+    "SecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Enable SSH and HTTP",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "80",
+            "ToPort": "80",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "Instance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": {
+          "Fn::FindInMap": [
+            "RegionMap",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
+        },
+        "InstanceType": "t2.micro",
+        "KeyName": {"Ref": "KeyName"},
+        "SecurityGroups": [{"Ref": "SecurityGroup"}],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xe\n",
+                "yum update -y aws-cfn-bootstrap\n",
+                "/opt/aws/bin/cfn-init -s ",
+                {"Ref": "AWS::StackId"},
+                " --region ",
+                {"Ref": "AWS::Region"},
+                " -r Instance\n"
+              ]
+            ]
+          }
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Init": {
+          "configSets": {
+            "default": [
+              "server-setup",
+              "server-tests"
+            ]
+          },
+          "server-setup": {
+            "packages": {
+              "yum": {
+                "gcc": [],
+                "httpd": ["2.2.29"],
+                "ruby-devel": []
+              },
+              "rubygems": {
+                "aruba": ["0.6.2"]
+              }
+            },
+            "files": {
+              "/var/www/html/index.html": {
+                "source": "https://github.com/trikosuave/mini_project/raw/master/index.html",
+                "mode": "000664",
+                "owner": "apache",
+                "group": "apache"
+              },
+              "/var/www/html/test_results.html": {
+                "content": { "Fn::Join": ["", [
+                  "<html>", "\n",
+                  "<body>", "\n",
+                  "<p>No tests have run.</p>", "\n",
+                  "</body>", "\n",
+                  "</html>", "\n"
+                ]]},
+                "mode": "000664",
+                "owner": "apache",
+                "group": "apache"
+              },
+              "/home/ec2-user/features/mini_project.feature": {
+                "source": "https://github.com/trikosuave/mini_project/raw/master/features/mini_project.feature",
+                "mode": "000664",
+                "owner": "ec2-user",
+                "group": "ec2-user"
+              },
+              "/home/ec2-user/features/support/env.rb": {
+                "source": "https://github.com/trikosuave/mini_project/raw/master/features/support/env.rb",
+                "mode": "000664",
+                "owner": "ec2-user",
+                "group": "ec2-user"
+              }
+            },
+            "services": {
+              "sysvinit": {
+                "httpd": {
+                  "enabled": "true",
+                  "ensureRunning": "true"
+                }
+              }
+            }
+          },
+          "server-tests": {
+            "commands": {
+              "01-run-tests": {
+                "command": "/usr/local/bin/cucumber --format html > /var/www/html/test_results.html",
+                "cwd": "/home/ec2-user",
+                "ignoreErrors": "true"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "WebsiteURL": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "http://",
+            {
+              "Fn::GetAtt": [
+                "Instance",
+                "PublicDnsName"
+              ]
+            }
+          ]
+        ]
+      },
+      "Description": "Mini Project URL"
+    },
+    "PublicIP": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Instance",
+          "PublicIp"
+        ]
+      },
+      "Description": "Public IP address of the instance"
+    }
+  }
+}
