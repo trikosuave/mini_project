@@ -2,7 +2,7 @@
 
 I created infrastructure code to deploy a web server. AWS CloudFormation and CloudFormationInit are being used to provision the server. I learned how to install and utilize Chef via CloudFormation as well, but decided to stick with CloudFormationInit since I had never used it before. All files needed in the build are pulled directly from this repository. 
 
-To deploy a server, either load mini_project.template into the AWS CloudFormation Console or run the following command via the CLI (replacing <stack_name> and <key_name>):
+To deploy a server, either load mini_project.template into the AWS CloudFormation Console or run the following command via the CLI (replacing \<stack_name\> and \<key_name\>):
 
 ```
 aws cloudformation create-stack --stack-name <stack_name> --template-body https://github.com/trikosuave/mini_project/raw/master/mini_project.template --parameters ParameterKey=KeyName,ParameterValue=<key_name>
